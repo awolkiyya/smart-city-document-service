@@ -1,11 +1,16 @@
 # ================================
-# 1. Base image (Node)
+# 1. Base image
 # ================================
 FROM node:20-slim
 
 # ================================
-# 2. Install system dependencies
-# (LibreOffice + fonts + pdf tools)
+# 2. Set environment
+# ================================
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# ================================
+# 3. Install system dependencies
 # ================================
 RUN apt-get update && apt-get install -y \
     libreoffice \
@@ -14,44 +19,55 @@ RUN apt-get update && apt-get install -y \
     libreoffice-common \
     fonts-dejavu \
     fontconfig \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # ================================
-# 3. Set working directory
+# 4. Create app user (security best practice)
+# ================================
+RUN useradd -m appuser
+
+# ================================
+# 5. Set working directory
 # ================================
 WORKDIR /app
 
 # ================================
-# 4. Copy package files
+# 6. Copy dependency files first (better caching)
 # ================================
 COPY package*.json ./
 
 # ================================
-# 5. Install dependencies
+# 7. Install dependencies (production only)
 # ================================
-RUN npm install
+RUN npm ci --omit=dev
 
 # ================================
-# 6. Copy source code
+# 8. Copy source code
 # ================================
 COPY . .
 
 # ================================
-# 7. Build TypeScript
+# 9. Build TypeScript
 # ================================
 RUN npm run build
 
 # ================================
-# 8. Create runtime folders
+# 10. Create runtime folders
 # ================================
-RUN mkdir -p /tmp/generated
+RUN mkdir -p /tmp/generated && chown -R appuser:appuser /tmp/generated
 
 # ================================
-# 9. Expose port
+# 11. Switch to non-root user
+# ================================
+USER appuser
+
+# ================================
+# 12. Expose port
 # ================================
 EXPOSE 3000
 
 # ================================
-# 10. Start server
+# 13. Start server
 # ================================
-CMD ["npm", "start"]
+CMD ["node", "dist/server.js"]
