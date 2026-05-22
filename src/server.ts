@@ -27,14 +27,16 @@ try {
 
 /**
  * =====================================================
- * VALIDATE ENV
+ * VALIDATE ENV (RAILWAY SAFE)
  * =====================================================
  */
-const PORT = Number(process.env.PORT || env.PORT || 3000);
+const PORT = process.env.PORT
+  ? Number(process.env.PORT)
+  : env.PORT;
 
 /**
  * =====================================================
- * START SERVER (RAILWAY FIX CRITICAL)
+ * START SERVER (CRITICAL FOR RAILWAY)
  * =====================================================
  */
 const server = app.listen(PORT, "0.0.0.0", () => {
@@ -55,8 +57,6 @@ process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
   server.close(() => process.exit(1));
 });
-
-
 
 
 
