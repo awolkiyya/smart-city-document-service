@@ -32,9 +32,7 @@ app.get("/", (_, res) => {
 
 app.use(
   "/generated",
-  express.static(
-    path.join(__dirname, "../generated")
-  )
+  express.static(path.join(process.cwd(), "generated"))
 );
 
 /**
