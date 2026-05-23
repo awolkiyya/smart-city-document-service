@@ -96,6 +96,7 @@ COPY --from=builder /app/dist ./dist
 # 16. Copy templates/assets if needed
 # =========================================================
 COPY --from=builder /app/templates ./templates
+COPY --from=builder /app/assets ./assets
 
 # =========================================================
 # 17. Create runtime directories
