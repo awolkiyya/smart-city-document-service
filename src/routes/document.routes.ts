@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import {
-  generateDocumentController,
+  generatePlanDocumentController,
   convertPdfController,
   healthCheckController,
 } from "../controllers/document.controller";
@@ -21,7 +21,7 @@ router.get("/health", healthCheckController);
  * =====================================================
  * POST /api/documents/generate
  */
-router.post("/generate", generateDocumentController);
+router.post("/generate", generatePlanDocumentController);
 // generate plan
 // generate report
 

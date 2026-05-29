@@ -37,4 +37,9 @@ export const FREQUENCY_RULES: Record<
     allowedGrouping: "year",
     requiresDateRange: false,
   },
+  CUSTOME: {
+    label: "",
+    allowedGrouping: "day",
+    requiresDateRange: false
+  }
 };

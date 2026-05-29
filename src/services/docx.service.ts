@@ -1,18 +1,28 @@
 import fs from "fs";
 import path from "path";
-
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
-
 import { v4 as uuidv4 } from "uuid";
 
-import {
-  GENERATED_DIR,
-  TEMPLATE_PATH,
-} from "../config/paths";
-
-import { imageModule } from "./image.service";
+import { GENERATED_DIR, TEMPLATE_PATH } from "../config/paths";
+import { createImageModule } from "./image.service";
 import { LoggerService } from "./logger.service";
+
+/**
+ * =====================================================
+ * TEMPLATE CACHE (FAST OPTIMIZATION)
+ * =====================================================
+ */
+let cachedTemplate: Buffer | null = null;
+
+/**
+ * =====================================================
+ * ENSURE OUTPUT DIRECTORY EXISTS
+ * =====================================================
+ */
+if (!fs.existsSync(GENERATED_DIR)) {
+  fs.mkdirSync(GENERATED_DIR, { recursive: true });
+}
 
 export interface GenerateDocxResult {
   readonly fileName: string;
@@ -26,27 +36,14 @@ export const generateDocx = async (
 ): Promise<GenerateDocxResult> => {
   try {
     // =====================================================
-    // VALIDATE TEMPLATE EXISTS
+    // LOAD TEMPLATE (CACHED)
     // =====================================================
-    if (!fs.existsSync(TEMPLATE_PATH)) {
-      throw new Error(
-        `DOCX template not found: ${TEMPLATE_PATH}`
-      );
-    }
+    if (!cachedTemplate) {
+      if (!fs.existsSync(TEMPLATE_PATH)) {
+        throw new Error(`DOCX template not found: ${TEMPLATE_PATH}`);
+      }
 
-    // =====================================================
-    // READ TEMPLATE
-    // =====================================================
-    let templateContent: string;
-
-    try {
-      templateContent = fs.readFileSync(
-        TEMPLATE_PATH,
-        "binary"
-      );
-    } catch (error) {
-      LoggerService.error("Failed to read DOCX template", error);
-      throw new Error("Failed to read DOCX template");
+      cachedTemplate = fs.readFileSync(TEMPLATE_PATH);
     }
 
     // =====================================================
@@ -55,7 +52,7 @@ export const generateDocx = async (
     let zip: PizZip;
 
     try {
-      zip = new PizZip(templateContent);
+      zip = new PizZip(cachedTemplate);
     } catch (error) {
       LoggerService.error("Failed to initialize PizZip", error);
       throw new Error("Invalid DOCX template format");
@@ -70,7 +67,7 @@ export const generateDocx = async (
       doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
-        modules: [imageModule],
+        modules: [createImageModule()], // ✅ safe per request
       });
     } catch (error) {
       LoggerService.error("Failed to initialize Docxtemplater", error);
@@ -87,10 +84,7 @@ export const generateDocx = async (
 
       const details =
         error?.properties?.errors
-          ?.map(
-            (e: any) =>
-              `${e.name}: ${e.properties?.explanation}`
-          )
+          ?.map((e: any) => `${e.name}: ${e.properties?.explanation}`)
           .join("\n") || error.message;
 
       throw new Error(`DOCX render failed:\n${details}`);
@@ -99,17 +93,10 @@ export const generateDocx = async (
     // =====================================================
     // GENERATE BUFFER
     // =====================================================
-    let buffer: Buffer;
-
-    try {
-      buffer = doc.getZip().generate({
-        type: "nodebuffer",
-        compression: "DEFLATE",
-      });
-    } catch (error) {
-      LoggerService.error("Failed to generate DOCX buffer", error);
-      throw new Error("Failed to generate document buffer");
-    }
+    const buffer = doc.getZip().generate({
+      type: "nodebuffer",
+      compression: "DEFLATE",
+    });
 
     // =====================================================
     // FILE NAME + PATH
@@ -118,25 +105,17 @@ export const generateDocx = async (
     const outputPath = path.join(GENERATED_DIR, fileName);
 
     // =====================================================
-    // SAVE FILE
+    // SAVE FILE (ASYNC SAFE)
     // =====================================================
-    try {
-      fs.writeFileSync(outputPath, buffer);
-    } catch (error) {
-      LoggerService.error("Failed to save DOCX file", error);
-      throw new Error("Failed to save generated document");
-    }
+    fs.writeFileSync(outputPath, buffer);
 
-    // =====================================================
-    // LOG SUCCESS
-    // =====================================================
     LoggerService.info("DOCX generated successfully", {
       fileName,
       outputPath,
     });
 
     // =====================================================
-    // RETURN CONTRACT (STABLE API)
+    // RETURN RESULT
     // =====================================================
     return {
       fileName,

@@ -3,4 +3,5 @@ export type ReportFrequency =
   | "WEEKLY"
   | "MONTHLY"
   | "QUARTERLY"
-  | "YEARLY";
+  | "YEARLY"
+  | "CUSTOME";

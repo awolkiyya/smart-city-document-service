@@ -1,0 +1,40 @@
+name: Deploy Document Service
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Deploy via SSH
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 196.190.213.40
+          username: docadmin
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+          script: |
+            cd /home/docadmin/document-service
+
+            echo "Pulling latest code..."
+            git pull origin main
+
+            echo "Stopping container..."
+            docker compose down
+
+            echo "Rebuilding image..."
+            docker compose build
+
+            echo "Starting service..."
+            docker compose up -d
+
+            echo "Deployment complete"
