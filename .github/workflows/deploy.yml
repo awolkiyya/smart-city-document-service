@@ -9,7 +9,6 @@ jobs:
 deploy:
 runs-on: ubuntu-latest
 
-```
 steps:
   - name: Deploy via SSH
     uses: appleboy/ssh-action@v1.0.3
@@ -36,4 +35,3 @@ steps:
         docker image prune -f
 
         echo "✅ Deployment completed successfully"
-```
