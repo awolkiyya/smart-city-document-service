@@ -9,29 +9,28 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-steps:
-  - name: Deploy via SSH
-    uses: appleboy/ssh-action@v1.0.3
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DOC_SSH_HOST }}
+          username: ${{ secrets.DOC_SSH_USER }}
+          key: ${{ secrets.DOC_SSH_PRIVATE_KEY }}
 
-    with:
-      host: ${{ secrets.DOC_SSH_HOST }}
-      username: ${{ secrets.DOC_SSH_USER }}
-      key: ${{ secrets.DOC_SSH_PRIVATE_KEY }}
+          script: |
+            set -e
 
-      script: |
-        set -e
+            echo "🚀 Starting Document Service Deployment..."
 
-        echo "🚀 Starting Document Service Deployment..."
+            cd /home/docadmin/apps/document-service
 
-        cd /home/docadmin/apps/document-service
+            echo "📥 Pulling latest code..."
+            git pull origin main
 
-        echo "📥 Pulling latest code..."
-        git pull origin main
+            echo "🐳 Rebuilding containers..."
+            docker compose up -d --build
 
-        echo "🐳 Rebuilding containers..."
-        docker compose up -d --build
+            echo "🧹 Cleaning dangling Docker images..."
+            docker image prune -f
 
-        echo "🧹 Cleaning dangling Docker images..."
-        docker image prune -f
-
-        echo "✅ Deployment completed successfully"
+            echo "✅ Deployment completed successfully"
