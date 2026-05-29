@@ -5,11 +5,9 @@ FROM node:20.11-bullseye-slim AS builder
 
 WORKDIR /app
 
-# Install dependencies first (better layer caching)
 COPY package*.json ./
 RUN npm ci
 
-# Copy source and build
 COPY . .
 RUN npm run build
 
@@ -27,7 +25,7 @@ ENV PORT=3000
 ENV LIBREOFFICE_PATH=/usr/bin/soffice
 
 # =========================================================
-# System dependencies (optimized)
+# System dependencies
 # =========================================================
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice-core \
@@ -39,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================================
-# Create non-root user (security hardening)
+# Non-root user (security)
 # =========================================================
 RUN useradd -m appuser
 
@@ -52,32 +50,38 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # =========================================================
-# Copy build artifacts (secure ownership)
+# Application files
 # =========================================================
 COPY --from=builder --chown=appuser:appuser /app/dist ./dist
 COPY --from=builder --chown=appuser:appuser /app/templates ./templates
 COPY --from=builder --chown=appuser:appuser /app/assets ./assets
 
 # =========================================================
-# Persistent storage (documents, temp files)
+# Persistent runtime directories (IMPORTANT FIX)
 # =========================================================
-RUN mkdir -p /app/storage && chown -R appuser:appuser /app/storage
+RUN mkdir -p \
+    /app/storage \
+    /app/generated \
+    /app/tmp \
+    && chown -R appuser:appuser /app/storage /app/generated /app/tmp
 
+# =========================================================
 # Switch to non-root user
+# =========================================================
 USER appuser
 
 # =========================================================
-# Expose service port
+# Port
 # =========================================================
 EXPOSE 3000
 
 # =========================================================
-# Healthcheck (production-safe)
+# Healthcheck
 # =========================================================
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
 CMD curl -fsS http://localhost:3000/health || exit 1
 
 # =========================================================
-# Start application
+# Start app
 # =========================================================
 CMD ["node", "dist/server.js"]
