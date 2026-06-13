@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import morgan from "morgan";
+
 
 import documentRoutes from "./routes/document.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
@@ -9,6 +11,7 @@ import path from "path";
 
 const app = express();
 
+app.use(morgan("combined")); // ← HERE
 app.use(cors());
 
 app.use(
