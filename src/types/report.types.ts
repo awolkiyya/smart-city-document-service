@@ -1,194 +1,186 @@
+import { DocumentType } from "../services/path.service";
+import { Activity, MainObjective, Workflow } from "./plan.types";
+
+/**
+ * =====================================================
+ * REPORT PAYLOAD
+ * =====================================================
+ */
 export interface ReportPayload {
-    /**
+  data: ReportData;
+
+  file_path: string;
+
+  type: DocumentType;
+
+  template_version?: string;
+}
+
+/**
+ * =====================================================
+ * REPORT DATA
+ * =====================================================
+ */
+export interface ReportData {
+  reportTitle: string;
+
+  sectorName: string;
+
+  cityName: string;
+
+  subcity?: string;
+
+  wereda?: string;
+
+  year: number;
+
+  previous_year?: number;
+
+  name:string;
+
+  /**
+   * =====================================================
+   * PERIOD
+   * =====================================================
+   */
+  period: ReportPeriod;
+
+  /**
+   * =====================================================
+   * DYNAMIC REPORT SECTIONS
+   * =====================================================
+   */
+  sections: Record<string, string>;
+
+  /**
+   * =====================================================
+   * KPI SUMMARY
+   * =====================================================
+   */
+  kpis: KPI[];
+
+  /**
+   * =====================================================
+   * PLANNING STRUCTURE
+   * =====================================================
+   */
+  galmoota_tarsimaawa?: MainObjective[];
+
+  kayyoolee?: Activity[];
+   /**
      * =====================================================
-     * BASIC INFORMATION
+     * WORKFLOW (NEW)
      * =====================================================
      */
-    cityName: string;
-  
-    sectorName: string;
-  
-    year: string;
-  
-    month: string;
-  
-    subcity?: string;
-  
-    wereda?: string;
+   workflow?: Workflow;
 
-    planName?:string;
-  
-    /**
-     * =====================================================
-     * REPORT META
-     * =====================================================
-     */
-    reportName?: string;
-    from?:string;
-    to?:string;
-    target?:string;
-    karoora?:string;
-    raawwii?:string;
-    percenti?:string;
+}
 
-    
-    // Day report Data
-    dayName?:string;
-    dayNumber?:string;
+/**
+ * =====================================================
+ * PERIOD
+ * =====================================================
+ */
+export interface ReportPeriod {
+  /**
+   * Period Type
+   */
+  type:
+    | "DAILY"
+    | "WEEKLY"
+    | "MONTHLY"
+    | "QUARTERLY"
+    | "SEMI_ANNUAL"
+    | "CUSTOM"
+    | "YEARLY";
 
+  /**
+   * Human readable label
+   * Example:
+   *  - Caamsaa 2018
+   *  - Kurmaana 1ffaa
+   */
+  label: string;
 
-    // Kurmaana Report Data
-    kurmaana?:string;
-    month1?:string;
-    month2?:string;
-    month3?:string;
+  /**
+   * Short summary
+   * Example:
+   *  - Ji'a 1
+   *  - Kurmaana
+   */
+  summary: string;
 
-    // Ji'a Report Data
-    jia?:string;
-  
-    /**
-     * =====================================================
-     * CONTENT SECTIONS
-     * =====================================================
-     */
-    seensa: string;
-        
-    toora_xiyyeeffannoo?: string;
-  
-    tooftaa_raawwii?: string;
-  
-    rakkowwan?: string;
-  
-    mulata_ergama_duudhaalee?: string;
-  
-    walitti_qaba?: string;
+  /**
+   * Quarterly Metadata
+   */
+  kurmaana?: KurmaanaInfo | null;
 
-    ciminoota_turan?: string;
+  /**
+   * Date Range
+   */
+  range: PeriodRange;
 
-    rakkoolee_quunnaman?: string;
+  /**
+   * Business Metadata
+   */
+  meta: PeriodMeta;
+}
 
-    hanqinoota_mulatan?: string;
+export interface KurmaanaInfo {
+  value?: number;
+  code?: string;
+  label?: string;
+  months?: string[];
+}
 
-    tooftaalee_raawwi?:string;
+export interface PeriodRange {
+  start: PeriodDate;
+  end: PeriodDate;
+}
 
+export interface PeriodMeta {
+  frequency: string;
+  duration_days: number;
+}
 
+/**
+ * =====================================================
+ * PERIOD DATE
+ * =====================================================
+ */
+export interface PeriodDate {
+  date: string;
 
-  
-    /**
-     * =====================================================
-     * MAJOR ACTIVITIES
-     * =====================================================
-     */
+  dayName: string;
 
-    galmoota?: MainObjective[];
-    kaayyolee?: Activity[];
+  dayNumber: number;
 
-  
-    /**
-     * =====================================================
-     * HIERARCHICAL PLANNING STRUCTURE
-     * =====================================================
-     */
-    objectives?: MainObjective[];
-  }
+  monthName: string;
 
+  year: number;
+}
 
-  export interface KPI {
-    /**
-     * =====================================================
-     * KPI IDENTIFICATION
-     * =====================================================
-     */
-    id: string;
-  
-    indicator: string;
-  
-    /**
-     * =====================================================
-     * KPI META
-     * =====================================================
-     */
-    weight: number;
-  
-    unit: string;
-  
-    baseline: number;
-  
-    target: number;
-  
-    /**
-     * =====================================================
-     * QUARTERLY EXECUTION
-     * =====================================================
-     */
-    q1: number;
-  
-    q2: number;
-  
-    q3: number;
-  
-    q4: number;
-  
-    /**
-     * =====================================================
-     * OPTIONAL COMPUTED VALUES
-     * =====================================================
-     */
-    totalExecution?: number;
-  
-    achievement?: number;
-  }
-  
-  export interface Activity {
-    /**
-     * =====================================================
-     * ACTIVITY IDENTIFICATION
-     * =====================================================
-     */
-    id: string;
-  
-    title: string;
-  
-    /**
-     * =====================================================
-     * WEIGHT
-     * =====================================================
-     */
-    weight: number;
-  
-    /**
-     * =====================================================
-     * KPI LIST
-     * =====================================================
-     */
-    kpis: KPI[];
-  }
-  
-  export interface MainObjective {
-    /**
-     * =====================================================
-     * OBJECTIVE IDENTIFICATION
-     * =====================================================
-     */
-    id: string;
-  
-    title: string;
-  
-    /**
-     * =====================================================
-     * WEIGHT
-     * =====================================================
-     */
-    weight: number;
-  
-    /**
-     * =====================================================
-     * ACTIVITIES
-     * =====================================================
-     */
-    activities: Activity[];
-  }
-  
-//   export interface MainObjective {
-//     activity_name: string;
-//   }
+/**
+ * =====================================================
+ * KPI
+ * =====================================================
+ */
+export interface KPI {
+  id: string;
+
+  indicator: string;
+
+  weight: number;
+
+  unit: string;
+
+  baseline: number;
+
+  annual_target: number;
+
+  period_target: number;
+
+  achieved: number;
+
+  progress: number;
+}

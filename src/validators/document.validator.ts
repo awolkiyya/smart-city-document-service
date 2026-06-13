@@ -1,39 +1,30 @@
-import { PlanPayload } from "../types/plan.types";
-
 export interface ValidationError {
   field: string;
   message: string;
 }
 
-export const validatePayload = (
-  body: Partial<PlanPayload>
+/**
+ * =====================================================
+ * GENERIC PAYLOAD VALIDATOR
+ * (Reusable for Plan, Report, etc.)
+ * =====================================================
+ */
+export const validatePayload = <T extends object>(
+  body: Partial<T>,
+  requiredFields: (keyof T)[]
 ): ValidationError[] => {
-  const requiredFields: (keyof PlanPayload)[] = [
-    "cityName",
-    "sectorName",
-    "year",
-    "month",
-    // "seensa",
-    // "kaayyoo",
-  ];
-
   const errors: ValidationError[] = [];
 
-  requiredFields.forEach((field) => {
+  for (const field of requiredFields) {
     const value = body[field];
 
-    if (
-      value === undefined ||
-      value === null ||
-      value === ""
-    ) {
+    if (value === undefined || value === null || value === "") {
       errors.push({
-        field,
-        message: `${field} is required`,
+        field: String(field),
+        message: `${String(field)} is required`,
       });
     }
-  });
+  }
 
-  // ✅ REQUIRED RETURN (this fixes TS2355)
   return errors;
 };

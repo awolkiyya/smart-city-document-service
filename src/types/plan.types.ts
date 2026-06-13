@@ -1,3 +1,5 @@
+import { DocumentType } from "../services/path.service";
+
 export interface KPI {
     /**
      * =====================================================
@@ -42,63 +44,56 @@ export interface KPI {
     totalExecution?: number;
   
     achievement?: number;
+    yeero?: string;
+
   }
+
+
   
   export interface Activity {
-    /**
-     * =====================================================
-     * ACTIVITY IDENTIFICATION
-     * =====================================================
-     */
-    id: string;
   
     title: string;
   
-    /**
-     * =====================================================
-     * WEIGHT
-     * =====================================================
-     */
-    weight: number;
-  
-    /**
-     * =====================================================
-     * KPI LIST
-     * =====================================================
-     */
-    kpis: KPI[];
   }
   
-  export interface Objective {
-    /**
-     * =====================================================
-     * OBJECTIVE IDENTIFICATION
-     * =====================================================
-     */
-    id: string;
-  
+
+  export interface MainObjective {
     title: string;
-  
-    /**
-     * =====================================================
-     * WEIGHT
-     * =====================================================
-     */
-    weight: number;
-  
-    /**
-     * =====================================================
-     * ACTIVITIES
-     * =====================================================
-     */
-    activities: Activity[];
+  }
+
+  export interface WorkflowUser {
+    name?: string;
+    date?: string;
   }
   
-  export interface MajorActivity {
-    activity_name: string;
-  }
+  export interface Workflow {
+    prepared?: string;
+    approved?: string;
+    verified?: string;
   
-  export interface PlanPayload {
+    p_date?: string;
+    a_date?: string;
+    v_date?: string;
+  }
+
+
+
+  /**
+ * =====================================================
+ * REPORT PAYLOAD
+ * =====================================================
+ */
+export interface PlanPayload {
+  data: PlanData;
+
+  file_path: string;
+
+  type: DocumentType;
+
+  template_version?: string;
+}
+  
+  export interface PlanData {
     /**
      * =====================================================
      * BASIC INFORMATION
@@ -115,6 +110,8 @@ export interface KPI {
     subcity?: string;
   
     wereda?: string;
+
+    name?:string;
   
     /**
      * =====================================================
@@ -122,47 +119,38 @@ export interface KPI {
      * =====================================================
      */
     planName?: string;
-  
-    yeero?: string;
-  
+    
     rawwi?: string;
   
     galma?: string;
   
     /**
      * =====================================================
-     * CONTENT SECTIONS
+     * DYNAMIC REPORT SECTIONS
      * =====================================================
-     */
-    seensa: string;
-  
-    kaayyoo: string;
-  
-    galmoota?: string;
-  
-    xiinxala_raawwii_waggota_darbanii?: string;
-  
-    toora_xiyyeeffannoo?: string;
-  
-    tooftaa_raawwii?: string;
-  
-    rakkowwan?: string;
-  
-    mulata_ergama_duudhaalee?: string;
-  
-    xumura?: string;
+    */
+    sections: Record<string, string>;
   
     /**
      * =====================================================
-     * MAJOR ACTIVITIES
+     * PLANNING STRUCTURE
      * =====================================================
      */
-    hojii_gurguddoo?: MajorActivity[];
-  
+    galmoota_tarsimawa?: MainObjective[];
+
+    kayyoolee?: Activity[];
+    
     /**
      * =====================================================
      * HIERARCHICAL PLANNING STRUCTURE
      * =====================================================
      */
-    objectives?: Objective[];
+    kpis?: KPI[];
+
+    /**
+     * =====================================================
+     * WORKFLOW (NEW)
+     * =====================================================
+     */
+    workflow?: Workflow;
   }

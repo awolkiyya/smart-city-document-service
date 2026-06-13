@@ -1,0 +1,1 @@
+export type TemplateType = "plan" | "report";

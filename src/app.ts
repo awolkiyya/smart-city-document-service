@@ -6,6 +6,7 @@ import { errorMiddleware } from "./middleware/error.middleware";
 import path from "path";
 
 
+
 const app = express();
 
 app.use(cors());
@@ -33,6 +34,11 @@ app.get("/", (_, res) => {
 app.use(
   "/generated",
   express.static(path.join(process.cwd(), "generated"))
+);
+
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "uploads"))
 );
 
 /**

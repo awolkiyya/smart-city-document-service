@@ -3,26 +3,18 @@ import path from "path";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import { v4 as uuidv4 } from "uuid";
+import { promisify } from "util";
 
-import { GENERATED_DIR, TEMPLATE_PATH } from "../config/paths";
+import { GENERATED_DIR } from "../config/paths";
 import { createImageModule } from "./image.service";
 import { LoggerService } from "./logger.service";
 
 /**
  * =====================================================
- * TEMPLATE CACHE (FAST OPTIMIZATION)
+ * TYPES
  * =====================================================
  */
-let cachedTemplate: Buffer | null = null;
-
-/**
- * =====================================================
- * ENSURE OUTPUT DIRECTORY EXISTS
- * =====================================================
- */
-if (!fs.existsSync(GENERATED_DIR)) {
-  fs.mkdirSync(GENERATED_DIR, { recursive: true });
-}
+export type DocumentType = "plan" | "report";
 
 export interface GenerateDocxResult {
   readonly fileName: string;
@@ -31,100 +23,164 @@ export interface GenerateDocxResult {
   readonly downloadUrl: string;
 }
 
+/**
+ * =====================================================
+ * FS PROMISES
+ * =====================================================
+ */
+const writeFileAsync = promisify(fs.writeFile);
+const readFileAsync = promisify(fs.readFile);
+const mkdirAsync = promisify(fs.mkdir);
+const accessAsync = promisify(fs.access);
+
+/**
+ * =====================================================
+ * TEMPLATE CACHE (PER PATH)
+ * =====================================================
+ */
+let cachedTemplate: Buffer | null = null;
+let cachedTemplatePath: string | null = null;
+
+/**
+ * =====================================================
+ * ENSURE DIRECTORY
+ * =====================================================
+ */
+const ensureDir = async (dir: string) => {
+  try {
+    await accessAsync(dir, fs.constants.F_OK);
+  } catch {
+    await mkdirAsync(dir, { recursive: true });
+  }
+};
+
+/**
+ * =====================================================
+ * DOCX ENGINE
+ * =====================================================
+ */
 export const generateDocx = async (
-  templateData: Record<string, unknown>
+  templateData: Record<string, unknown>,
+  templatePath: string,
+  type: DocumentType
 ): Promise<GenerateDocxResult> => {
   try {
-    // =====================================================
-    // LOAD TEMPLATE (CACHED)
-    // =====================================================
-    if (!cachedTemplate) {
-      if (!fs.existsSync(TEMPLATE_PATH)) {
-        throw new Error(`DOCX template not found: ${TEMPLATE_PATH}`);
+    /**
+     * =====================================================
+     * VALIDATE TEMPLATE PATH
+     * =====================================================
+     */
+    if (!templatePath) {
+      throw new Error("Template path is required");
+    }
+
+    /**
+     * =====================================================
+     * LOAD TEMPLATE (SMART CACHE)
+     * =====================================================
+     */
+    if (!cachedTemplate || cachedTemplatePath !== templatePath) {
+      if (!fs.existsSync(templatePath)) {
+        throw new Error(`DOCX template not found: ${templatePath}`);
       }
 
-      cachedTemplate = fs.readFileSync(TEMPLATE_PATH);
+      cachedTemplate = await readFileAsync(templatePath);
+      cachedTemplatePath = templatePath;
     }
 
-    // =====================================================
-    // INIT ZIP
-    // =====================================================
-    let zip: PizZip;
+    /**
+     * =====================================================
+     * INIT ZIP
+     * =====================================================
+     */
+    const zip = new PizZip(cachedTemplate);
 
-    try {
-      zip = new PizZip(cachedTemplate);
-    } catch (error) {
-      LoggerService.error("Failed to initialize PizZip", error);
-      throw new Error("Invalid DOCX template format");
-    }
+    /**
+     * =====================================================
+     * INIT DOCXTEMPLATER
+     * =====================================================
+     */
+    const doc = new Docxtemplater(zip, {
+      paragraphLoop: true,
+      linebreaks: true,
+      modules: [createImageModule()],
+    });
 
-    // =====================================================
-    // INIT DOCXTEMPLATER
-    // =====================================================
-    let doc: Docxtemplater;
+    LoggerService.info("DOCX Render Data", {
+      period: templateData.period,
+    });
+    
+    console.log(
+      JSON.stringify(templateData, null, 2)
+    );
 
-    try {
-      doc = new Docxtemplater(zip, {
-        paragraphLoop: true,
-        linebreaks: true,
-        modules: [createImageModule()], // ✅ safe per request
-      });
-    } catch (error) {
-      LoggerService.error("Failed to initialize Docxtemplater", error);
-      throw new Error("Failed to initialize DOCX engine");
-    }
+    /**
+     * =====================================================
+     * RENDER
+     * =====================================================
+     */
+    doc.render(templateData);
 
-    // =====================================================
-    // RENDER DOCUMENT
-    // =====================================================
-    try {
-      doc.render(templateData);
-    } catch (error: any) {
-      LoggerService.error("DOCX render error", error);
-
-      const details =
-        error?.properties?.errors
-          ?.map((e: any) => `${e.name}: ${e.properties?.explanation}`)
-          .join("\n") || error.message;
-
-      throw new Error(`DOCX render failed:\n${details}`);
-    }
-
-    // =====================================================
-    // GENERATE BUFFER
-    // =====================================================
+    /**
+     * =====================================================
+     * GENERATE BUFFER
+     * =====================================================
+     */
     const buffer = doc.getZip().generate({
       type: "nodebuffer",
       compression: "DEFLATE",
     });
 
-    // =====================================================
-    // FILE NAME + PATH
-    // =====================================================
-    const fileName = `plan-${uuidv4()}.docx`;
-    const outputPath = path.join(GENERATED_DIR, fileName);
+    /**
+     * =====================================================
+     * ORGANIZED OUTPUT STRUCTURE
+     * =====================================================
+     */
+    const fileName = `doc-${uuidv4()}.docx`;
 
-    // =====================================================
-    // SAVE FILE (ASYNC SAFE)
-    // =====================================================
-    fs.writeFileSync(outputPath, buffer);
+    const outputDir = path.join(
+      GENERATED_DIR,
+      type,
+      "docx"
+    );
 
+    await ensureDir(outputDir);
+
+    const outputPath = path.join(outputDir, fileName);
+
+    /**
+     * =====================================================
+     * SAVE FILE
+     * =====================================================
+     */
+    await writeFileAsync(outputPath, buffer);
+
+    /**
+     * =====================================================
+     * LOG
+     * =====================================================
+     */
     LoggerService.info("DOCX generated successfully", {
       fileName,
       outputPath,
+      templatePath,
+      type,
     });
 
-    // =====================================================
-    // RETURN RESULT
-    // =====================================================
+    /**
+     * =====================================================
+     * RETURN
+     * =====================================================
+     */
     return {
       fileName,
       outputPath,
       buffer,
-      downloadUrl: `/generated/${fileName}`,
+      downloadUrl: `/generated/${type}/docx/${fileName}`,
     };
+
   } catch (error) {
-    LoggerService.error("generateDocx service failed", error);
+    LoggerService.error("generateDocx failed", error);
     throw error;
   }
 };
