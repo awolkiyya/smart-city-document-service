@@ -15,8 +15,12 @@ import { generateSafeFileName } from "../utils/fileName";
  * =====================================
  */
 const ensureDir = (dir: string) => {
-  if (!fs.existsSync(dir)) {
+  try {
     fs.mkdirSync(dir, { recursive: true });
+  } catch (err: any) {
+    if (err.code !== "EEXIST") {
+      throw err;
+    }
   }
 };
 

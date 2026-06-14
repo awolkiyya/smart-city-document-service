@@ -23,6 +23,7 @@ FROM node:20.11-bullseye-slim
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV LIBREOFFICE_PATH=/usr/bin/soffice
+ENV STORAGE_PATH=/app/storage
 
 # =========================================================
 # System dependencies
@@ -38,7 +39,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================================
-# Non-root user (security)
+# Non-root user (security best practice)
 # =========================================================
 RUN useradd -m appuser
 
@@ -51,20 +52,20 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # =========================================================
-# Application files
+# Application files (static build artifacts)
 # =========================================================
 COPY --from=builder --chown=appuser:appuser /app/dist ./dist
-COPY --from=builder --chown=appuser:appuser /app/templates ./templates
 COPY --from=builder --chown=appuser:appuser /app/assets ./assets
 
 # =========================================================
-# Persistent runtime directories (IMPORTANT FIX)
+# Runtime directories (MUST BE WRITABLE)
 # =========================================================
 RUN mkdir -p \
-    /app/storage \
-    /app/generated \
-    /app/tmp \
-    && chown -R appuser:appuser /app/storage /app/generated /app/tmp
+    /app/storage/templates \
+    /app/storage/uploads \
+    /app/storage/generated \
+    /app/storage/tmp \
+    && chown -R appuser:appuser /app/storage
 
 # =========================================================
 # Switch to non-root user
@@ -83,6 +84,6 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
 CMD curl -fsS http://localhost:3000/health || exit 1
 
 # =========================================================
-# Start app
+# Start application
 # =========================================================
 CMD ["node", "dist/server.js"]

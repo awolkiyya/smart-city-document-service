@@ -1,7 +1,11 @@
+import path from "path";
+
+const BASE_UPLOAD_DIR = process.env.STORAGE_PATH || "/app/storage";
+
 export const UPLOAD_PATHS = {
-    IMAGES: "uploads/images",
-    DOCUMENTS: "uploads/documents",
-  };
+  IMAGES: path.join(BASE_UPLOAD_DIR, "images"),
+  DOCUMENTS: path.join(BASE_UPLOAD_DIR, "documents"),
+};
   
   export const ALLOWED_MIME_TYPES = [
     "image/jpeg",
