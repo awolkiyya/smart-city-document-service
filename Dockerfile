@@ -28,8 +28,9 @@ ENV LIBREOFFICE_PATH=/usr/bin/soffice
 # System dependencies
 # =========================================================
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libreoffice-core \
+    libreoffice \
     libreoffice-writer \
+    libreoffice-calc \
     fonts-dejavu \
     fontconfig \
     ca-certificates \
