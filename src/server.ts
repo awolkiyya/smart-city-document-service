@@ -39,7 +39,7 @@ const PORT = process.env.PORT
  * START SERVER (CRITICAL FOR RAILWAY)
  * =====================================================
  */
-const server = app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "127.0.0.1", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
