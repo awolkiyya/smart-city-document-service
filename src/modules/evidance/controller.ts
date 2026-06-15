@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import { LoggerService } from "../../services/logger.service";
+import { UPLOAD_DIR } from "../../config/paths";
 
 /**
  * =====================================================
@@ -39,22 +40,26 @@ static async upload(req: Request, res: Response) {
 
     const absolutePath = file.path;
 
+    /**
+     * IMPORTANT:
+     * Convert to relative path inside UPLOAD base
+     * so we preserve images/documents structure
+     */
+    const relativePath = path
+      .relative(UPLOAD_DIR, absolutePath)
+      .replace(/\\/g, "/");
+
     const uploadedFile = {
       fileName: file.filename,
       originalName: file.originalname,
 
       /**
-       * FIXED: correct public URL based on your static route
+       * FIXED: preserves folder structure (images/documents)
        */
-      url: `/uploads/${file.filename}`,
+      url: `/uploads/${relativePath}`,
 
       /**
-       * optional grouping
-       */
-      folder: "uploads",
-
-      /**
-       * backend only (do NOT use in frontend)
+       * backend only
        */
       path: absolutePath,
 
