@@ -16,7 +16,7 @@ export class EvidenceController {
 
 /**
  * =====================================================
- * UPLOAD EVIDENCE
+ * UPLOAD EVIDENCE (PRODUCTION SAFE)
  * =====================================================
  */
 static async upload(req: Request, res: Response) {
@@ -24,6 +24,11 @@ static async upload(req: Request, res: Response) {
     const reportId = normalizeParam(req.params.reportId);
     const file = req.file as Express.Multer.File | undefined;
 
+    /**
+     * =====================================================
+     * VALIDATION
+     * =====================================================
+     */
     if (!reportId) {
       return res.status(400).json({
         success: false,
@@ -41,25 +46,34 @@ static async upload(req: Request, res: Response) {
     const absolutePath = file.path;
 
     /**
-     * IMPORTANT:
-     * Convert to relative path inside UPLOAD base
-     * so we preserve images/documents structure
+     * =====================================================
+     * SAFE RELATIVE PATH (CRITICAL FIX)
+     * =====================================================
+     * Keeps structure: images/xxx.png OR documents/xxx.pdf
      */
     const relativePath = path
       .relative(UPLOAD_DIR, absolutePath)
-      .replace(/\\/g, "/");
+      .replace(/\\/g, "/")
+      .replace(/^\/+/, "");
+
+    /**
+     * =====================================================
+     * PUBLIC URL (FRONTEND SAFE)
+     * =====================================================
+     */
+    const publicUrl = `/uploads/${relativePath}`;
 
     const uploadedFile = {
       fileName: file.filename,
       originalName: file.originalname,
 
       /**
-       * FIXED: preserves folder structure (images/documents)
+       * PUBLIC ACCESS URL
        */
-      url: `/uploads/${relativePath}`,
+      url: publicUrl,
 
       /**
-       * backend only
+       * INTERNAL FILESYSTEM PATH ONLY
        */
       path: absolutePath,
 
@@ -67,13 +81,24 @@ static async upload(req: Request, res: Response) {
       mimetype: file.mimetype,
     };
 
+    /**
+     * =====================================================
+     * LOGGING
+     * =====================================================
+     */
     LoggerService.info("Evidence upload successful", {
       reportId,
       fileName: file.filename,
+      url: publicUrl,
       size: file.size,
       mimetype: file.mimetype,
     });
 
+    /**
+     * =====================================================
+     * RESPONSE
+     * =====================================================
+     */
     return res.status(201).json({
       success: true,
       message: "Evidence uploaded successfully",
