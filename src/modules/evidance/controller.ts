@@ -23,11 +23,6 @@ static async upload(req: Request, res: Response) {
     const reportId = normalizeParam(req.params.reportId);
     const file = req.file as Express.Multer.File | undefined;
 
-    /**
-     * =====================================================
-     * VALIDATION
-     * =====================================================
-     */
     if (!reportId) {
       return res.status(400).json({
         success: false,
@@ -42,31 +37,24 @@ static async upload(req: Request, res: Response) {
       });
     }
 
-    /**
-     * =====================================================
-     * STORAGE METADATA NORMALIZATION
-     * =====================================================
-     * Ensures consistent structure for Laravel consumption
-     */
     const absolutePath = file.path;
-    const relativePath = path.relative(process.cwd(), absolutePath);
 
     const uploadedFile = {
       fileName: file.filename,
       originalName: file.originalname,
 
       /**
-       * Public access URL (frontend usage)
+       * FIXED: correct public URL based on your static route
        */
-      url: `/${relativePath.replace(/\\/g, "/")}`,
+      url: `/uploads/${file.filename}`,
 
       /**
-       * Directory grouping (for cleanup / deletion / audit)
+       * optional grouping
        */
-      folder: path.dirname(relativePath),
+      folder: "uploads",
 
       /**
-       * IMPORTANT: required by Laravel DB (NOT NULL constraint)
+       * backend only (do NOT use in frontend)
        */
       path: absolutePath,
 
@@ -74,11 +62,6 @@ static async upload(req: Request, res: Response) {
       mimetype: file.mimetype,
     };
 
-    /**
-     * =====================================================
-     * STRUCTURED LOGGING
-     * =====================================================
-     */
     LoggerService.info("Evidence upload successful", {
       reportId,
       fileName: file.filename,
@@ -86,12 +69,6 @@ static async upload(req: Request, res: Response) {
       mimetype: file.mimetype,
     });
 
-    /**
-     * =====================================================
-     * STANDARD API RESPONSE CONTRACT
-     * =====================================================
-     * MUST ALWAYS MATCH LARAVEL EXPECTATION
-     */
     return res.status(201).json({
       success: true,
       message: "Evidence uploaded successfully",
