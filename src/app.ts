@@ -5,7 +5,7 @@ import morgan from "morgan";
 
 import documentRoutes from "./routes/document.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
-import path from "path";
+import { GENERATED_DIR, UPLOAD_DIR } from "./config/paths";
 
 
 
@@ -34,15 +34,10 @@ app.get("/", (_, res) => {
   });
 });
 
-app.use(
-  "/generated",
-  express.static(path.join(process.cwd(), "generated"))
-);
 
-app.use(
-  "/uploads",
-  express.static(path.join(process.cwd(), "uploads"))
-);
+
+app.use("/generated", express.static(GENERATED_DIR));
+app.use("/uploads", express.static(UPLOAD_DIR));
 
 /**
  * =====================================================
